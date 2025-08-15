@@ -19,6 +19,7 @@ const Index = () => {
     importWallet,
     createOffer,
     refreshBalance,
+    fetchOrderBook,
   } = useXRPL();
 
   useEffect(() => {
@@ -115,6 +116,7 @@ const Index = () => {
             <div className="grid lg:grid-cols-2 gap-6">
               <OfferForm 
                 onCreateOffer={createOffer}
+                onFetchPrice={fetchOrderBook}
                 isLoading={isLoading}
               />
               <OffersList offers={offers} />

@@ -5,13 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { MarketPrice } from '@/components/MarketPrice';
+import { MarketPrice as MarketPriceType } from '@/hooks/useXRPL';
 
 interface OfferFormProps {
   onCreateOffer: (takerGets: string, takerPays: string, isSellOffer: boolean) => Promise<void>;
+  onFetchPrice: (
+    takerGets: { currency: string; issuer?: string },
+    takerPays: { currency: string; issuer?: string }
+  ) => Promise<MarketPriceType | null>;
   isLoading: boolean;
 }
 
-export const OfferForm = ({ onCreateOffer, isLoading }: OfferFormProps) => {
+export const OfferForm = ({ onCreateOffer, onFetchPrice, isLoading }: OfferFormProps) => {
   const [buyForm, setBuyForm] = useState({
     xrpAmount: '',
     currency: '',
@@ -60,7 +66,15 @@ export const OfferForm = ({ onCreateOffer, isLoading }: OfferFormProps) => {
           Create buy or sell offers on the XRPL Decentralized Exchange
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Market Price Display */}
+        <MarketPrice
+          currency={buyForm.currency || sellForm.currency}
+          issuer={buyForm.issuer || sellForm.issuer}
+          onFetchPrice={onFetchPrice}
+          isLoading={isLoading}
+        />
+        
         <Tabs defaultValue="buy" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-muted/50">
             <TabsTrigger value="buy" className="flex items-center space-x-2">

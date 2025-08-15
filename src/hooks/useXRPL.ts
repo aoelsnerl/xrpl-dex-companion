@@ -16,6 +16,18 @@ export interface OfferData {
   flags?: number;
 }
 
+export interface OrderBookEntry {
+  price: string;
+  amount: string;
+}
+
+export interface MarketPrice {
+  bid: string;
+  ask: string;
+  spread: string;
+  lastPrice?: string;
+}
+
 export const useXRPL = () => {
   const [client, setClient] = useState<Client | null>(null);
   const [wallet, setWallet] = useState<XRPLWallet | null>(null);
@@ -182,6 +194,62 @@ export const useXRPL = () => {
     }
   }, [client, wallet]);
 
+  const fetchOrderBook = useCallback(async (
+    takerGets: { currency: string; issuer?: string },
+    takerPays: { currency: string; issuer?: string }
+  ): Promise<MarketPrice | null> => {
+    try {
+      if (!client) return null;
+
+      const orderBookRequest = {
+        command: 'book_offers',
+        taker_gets: takerGets.currency === 'XRP' ? 'XRP' : {
+          currency: takerGets.currency,
+          issuer: takerGets.issuer
+        },
+        taker_pays: takerPays.currency === 'XRP' ? 'XRP' : {
+          currency: takerPays.currency,
+          issuer: takerPays.issuer
+        },
+        limit: 10
+      };
+
+      const response = await client.request(orderBookRequest as any);
+      const bookOffers = (response.result as any).offers || [];
+
+      if (bookOffers.length === 0) {
+        return null;
+      }
+
+      // Calculate best bid (highest price someone is willing to pay)
+      const bestOffer = bookOffers[0];
+      let price = '0';
+      
+      if (typeof bestOffer.TakerGets === 'string' && typeof bestOffer.TakerPays === 'object') {
+        // XRP/Token pair
+        const xrpAmount = parseFloat(dropsToXrp(bestOffer.TakerGets).toString());
+        const tokenAmount = parseFloat(bestOffer.TakerPays.value);
+        price = (tokenAmount / xrpAmount).toFixed(6);
+      } else if (typeof bestOffer.TakerGets === 'object' && typeof bestOffer.TakerPays === 'string') {
+        // Token/XRP pair
+        const tokenAmount = parseFloat(bestOffer.TakerGets.value);
+        const xrpAmount = parseFloat(dropsToXrp(bestOffer.TakerPays).toString());
+        price = (xrpAmount / tokenAmount).toFixed(6);
+      }
+
+      // For now, return the same price for bid and ask (in real implementation, you'd fetch both sides)
+      return {
+        bid: price,
+        ask: price,
+        spread: '0',
+        lastPrice: price
+      };
+    } catch (error) {
+      console.error('Failed to fetch order book:', error);
+      return null;
+    }
+  }, [client]);
+
   useEffect(() => {
     if (wallet && client) {
       fetchOffers();
@@ -199,5 +267,6 @@ export const useXRPL = () => {
     createOffer,
     fetchOffers,
     refreshBalance,
+    fetchOrderBook,
   };
 };
