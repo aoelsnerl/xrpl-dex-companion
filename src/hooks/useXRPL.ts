@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Client, Wallet, dropsToXrp, xrpToDrops, AccountOffer } from 'xrpl';
+import { Client, Wallet, dropsToXrp, xrpToDrops, AccountOffer, ECDSA } from 'xrpl';
 import { toast } from '@/hooks/use-toast';
 
 export interface XRPLWallet {
@@ -49,7 +49,19 @@ export const useXRPL = () => {
   const importWallet = useCallback(async (seed: string): Promise<void> => {
     try {
       setIsLoading(true);
-      const xrplWallet = Wallet.fromSeed(seed);
+      
+      // Try to import wallet with secp256k1 algorithm first, then fallback to ed25519
+      let xrplWallet: Wallet;
+      try {
+        xrplWallet = Wallet.fromSeed(seed, { algorithm: ECDSA.secp256k1 });
+      } catch (secp256k1Error) {
+        try {
+          xrplWallet = Wallet.fromSeed(seed, { algorithm: ECDSA.ed25519 });
+        } catch (ed25519Error) {
+          // If both fail, try without specifying algorithm (default behavior)
+          xrplWallet = Wallet.fromSeed(seed);
+        }
+      }
       
       if (!client) {
         throw new Error('Not connected to XRPL');
