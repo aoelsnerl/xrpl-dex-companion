@@ -26,13 +26,13 @@ export const useXRPL = () => {
   const connectToXRPL = useCallback(async () => {
     try {
       setIsLoading(true);
-      const xrplClient = new Client('wss://s.altnet.rippletest.net:51233'); // Testnet
+      const xrplClient = new Client('wss://xrplcluster.com'); // Mainnet
       await xrplClient.connect();
       setClient(xrplClient);
       setIsConnected(true);
       toast({
         title: "Connected to XRPL",
-        description: "Successfully connected to XRPL Testnet",
+        description: "Successfully connected to XRPL Mainnet",
       });
     } catch (error) {
       console.error('Failed to connect to XRPL:', error);

@@ -47,7 +47,7 @@ const Index = () => {
               className={isConnected ? "bg-success/20 text-success" : "bg-muted/50"}
             >
               <Globe className="w-3 h-3 mr-1" />
-              {isConnected ? 'Connected to Testnet' : 'Connecting...'}
+              {isConnected ? 'Connected to Mainnet' : 'Connecting...'}
             </Badge>
           </div>
         </div>
@@ -58,7 +58,7 @@ const Index = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-warning">Connecting to XRPL</CardTitle>
               <CardDescription>
-                Please wait while we connect to the XRPL Testnet...
+                Please wait while we connect to the XRPL Mainnet...
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
@@ -104,7 +104,7 @@ const Index = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Network</span>
                     <Badge variant="secondary" className="bg-success/20 text-success">
-                      Testnet
+                      Mainnet
                     </Badge>
                   </div>
                 </CardContent>

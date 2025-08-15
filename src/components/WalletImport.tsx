@@ -73,7 +73,7 @@ export const WalletImport = ({ onImport, isLoading }: WalletImportProps) => {
         
         <div className="mt-4 p-3 bg-muted/20 rounded-lg border border-border/30">
           <p className="text-sm text-muted-foreground">
-            <strong>Note:</strong> This app connects to XRPL Testnet. Make sure you're using a testnet seed phrase.
+            <strong>Note:</strong> This app connects to XRPL Mainnet. Make sure you're using a mainnet seed phrase.
           </p>
         </div>
       </CardContent>
