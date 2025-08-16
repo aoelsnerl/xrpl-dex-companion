@@ -1,13 +1,16 @@
+
 import { useEffect } from 'react';
 import { useXRPL } from '@/hooks/useXRPL';
 import { WalletImport } from '@/components/WalletImport';
 import { WalletInfo } from '@/components/WalletInfo';
 import { OfferForm } from '@/components/OfferForm';
 import { OffersList } from '@/components/OffersList';
+import { TrustlineForm } from '@/components/TrustlineForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Globe } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Zap, Globe, TrendingUp, Shield } from 'lucide-react';
 
 const Index = () => {
   const {
@@ -17,6 +20,7 @@ const Index = () => {
     offers,
     connectToXRPL,
     importWallet,
+    createTrustline,
     createOffer,
     refreshBalance,
     fetchOrderBook,
@@ -113,14 +117,60 @@ const Index = () => {
             </div>
 
             {/* Trading Interface */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              <OfferForm 
-                onCreateOffer={createOffer}
-                onFetchPrice={fetchOrderBook}
-                isLoading={isLoading}
-              />
-              <OffersList offers={offers} />
-            </div>
+            <Tabs defaultValue="trade" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+                <TabsTrigger value="trade" className="flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Trade</span>
+                </TabsTrigger>
+                <TabsTrigger value="trustline" className="flex items-center space-x-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Trustlines</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="trade" className="mt-6">
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <OfferForm 
+                    onCreateOffer={createOffer}
+                    onFetchPrice={fetchOrderBook}
+                    isLoading={isLoading}
+                  />
+                  <OffersList offers={offers} />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="trustline" className="mt-6">
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <TrustlineForm 
+                    onCreateTrustline={createTrustline}
+                    isLoading={isLoading}
+                  />
+                  <Card className="bg-gradient-card border-border/50 shadow-card">
+                    <CardHeader>
+                      <CardTitle className="text-lg">About Trustlines</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Trustlines allow you to hold tokens issued by other accounts on the XRPL. 
+                        You must create a trustline before you can receive or trade a token.
+                      </p>
+                      <div className="space-y-2">
+                        <div className="text-sm">
+                          <strong>Currency Code:</strong> The 3-character code for the token (e.g., USD)
+                        </div>
+                        <div className="text-sm">
+                          <strong>Issuer:</strong> The XRPL address that issues the token
+                        </div>
+                        <div className="text-sm">
+                          <strong>Limit:</strong> Maximum amount you're willing to hold (default: 1B)
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
       </div>

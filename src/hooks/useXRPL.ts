@@ -110,6 +110,54 @@ export const useXRPL = () => {
     }
   }, [client]);
 
+  const createTrustline = useCallback(async (
+    currency: string,
+    issuer: string,
+    limit: string = '1000000000'
+  ): Promise<void> => {
+    try {
+      if (!client || !wallet?.seed) {
+        throw new Error('Wallet not connected');
+      }
+
+      setIsLoading(true);
+      const xrplWallet = Wallet.fromSeed(wallet.seed);
+
+      const trustSetTx: any = {
+        TransactionType: 'TrustSet',
+        Account: xrplWallet.address,
+        LimitAmount: {
+          currency: currency,
+          issuer: issuer,
+          value: limit
+        }
+      };
+
+      const prepared = await client.autofill(trustSetTx);
+      const signed = xrplWallet.sign(prepared);
+      const result = await client.submitAndWait(signed.tx_blob);
+
+      if ((result.result.meta as any)?.TransactionResult === 'tesSUCCESS') {
+        toast({
+          title: "Trustline Created",
+          description: `Successfully created trustline for ${currency}`,
+        });
+      } else {
+        throw new Error('Transaction failed');
+      }
+    } catch (error) {
+      console.error('Failed to create trustline:', error);
+      toast({
+        title: "Trustline Failed",
+        description: "Failed to create trustline",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [client, wallet]);
+
   const createOffer = useCallback(async (
     takerGets: string,
     takerPays: string,
@@ -264,6 +312,7 @@ export const useXRPL = () => {
     offers,
     connectToXRPL,
     importWallet,
+    createTrustline,
     createOffer,
     fetchOffers,
     refreshBalance,
