@@ -21,8 +21,12 @@ export const TrustlineForm = ({ onCreateTrustline, isLoading }: TrustlineFormPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.currency && form.issuer) {
-      await onCreateTrustline(form.currency, form.issuer, form.limit);
-      setForm({ currency: '', issuer: '', limit: '1000000000' });
+      try {
+        await onCreateTrustline(form.currency, form.issuer, form.limit);
+        setForm({ currency: '', issuer: '', limit: '1000000000' });
+      } catch {
+        // The hook already reported the error; keep the form so the user can fix it.
+      }
     }
   };
 

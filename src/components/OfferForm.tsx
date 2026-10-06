@@ -6,57 +6,46 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { MarketPrice } from '@/components/MarketPrice';
-import { MarketPrice as MarketPriceType } from '@/hooks/useXRPL';
+import { CreateOfferParams, MarketPrice as MarketPriceType, OfferSide } from '@/hooks/useXRPL';
 
 interface OfferFormProps {
-  onCreateOffer: (takerGets: string, takerPays: string, isSellOffer: boolean) => Promise<void>;
-  onFetchPrice: (
-    takerGets: { currency: string; issuer?: string },
-    takerPays: { currency: string; issuer?: string }
-  ) => Promise<MarketPriceType | null>;
+  onCreateOffer: (params: CreateOfferParams) => Promise<void>;
+  onFetchPrice: (token: { currency: string; issuer: string }) => Promise<MarketPriceType | null>;
   isLoading: boolean;
 }
 
+const emptyForm = { xrpAmount: '', currency: '', issuer: '', amount: '' };
+
 export const OfferForm = ({ onCreateOffer, onFetchPrice, isLoading }: OfferFormProps) => {
-  const [buyForm, setBuyForm] = useState({
-    xrpAmount: '',
-    currency: '',
-    issuer: '',
-    amount: ''
-  });
-  
-  const [sellForm, setSellForm] = useState({
-    xrpAmount: '',
-    currency: '',
-    issuer: '',
-    amount: ''
-  });
+  const [activeSide, setActiveSide] = useState<OfferSide>('buy');
+  const [buyForm, setBuyForm] = useState(emptyForm);
+  const [sellForm, setSellForm] = useState(emptyForm);
+
+  const submitOffer = async (side: OfferSide, form: typeof emptyForm, reset: () => void) => {
+    if (!form.xrpAmount || !form.currency || !form.issuer || !form.amount) return;
+    try {
+      await onCreateOffer({
+        side,
+        xrpAmount: form.xrpAmount,
+        token: { currency: form.currency, issuer: form.issuer, value: form.amount },
+      });
+      reset();
+    } catch {
+      // The hook already reported the error; keep the form so the user can fix it.
+    }
+  };
 
   const handleBuySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (buyForm.xrpAmount && buyForm.currency && buyForm.issuer && buyForm.amount) {
-      const takerGets = {
-        currency: buyForm.currency,
-        issuer: buyForm.issuer,
-        value: buyForm.amount
-      };
-      await onCreateOffer(JSON.stringify(takerGets), buyForm.xrpAmount, false);
-      setBuyForm({ xrpAmount: '', currency: '', issuer: '', amount: '' });
-    }
+    await submitOffer('buy', buyForm, () => setBuyForm(emptyForm));
   };
 
   const handleSellSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (sellForm.xrpAmount && sellForm.currency && sellForm.issuer && sellForm.amount) {
-      const takerPays = {
-        currency: sellForm.currency,
-        issuer: sellForm.issuer,
-        value: sellForm.amount
-      };
-      await onCreateOffer(sellForm.xrpAmount, JSON.stringify(takerPays), true);
-      setSellForm({ xrpAmount: '', currency: '', issuer: '', amount: '' });
-    }
+    await submitOffer('sell', sellForm, () => setSellForm(emptyForm));
   };
+
+  const priceForm = activeSide === 'buy' ? buyForm : sellForm;
 
   return (
     <Card className="bg-gradient-card border-border/50 shadow-card">
@@ -69,13 +58,13 @@ export const OfferForm = ({ onCreateOffer, onFetchPrice, isLoading }: OfferFormP
       <CardContent className="space-y-6">
         {/* Market Price Display */}
         <MarketPrice
-          currency={buyForm.currency || sellForm.currency}
-          issuer={buyForm.issuer || sellForm.issuer}
+          currency={priceForm.currency}
+          issuer={priceForm.issuer}
           onFetchPrice={onFetchPrice}
           isLoading={isLoading}
         />
         
-        <Tabs defaultValue="buy" className="w-full">
+        <Tabs value={activeSide} onValueChange={(v) => setActiveSide(v as OfferSide)} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-muted/50">
             <TabsTrigger value="buy" className="flex items-center space-x-2">
               <TrendingUp className="w-4 h-4" />
@@ -91,7 +80,7 @@ export const OfferForm = ({ onCreateOffer, onFetchPrice, isLoading }: OfferFormP
             <form onSubmit={handleBuySubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="buy-xrp">XRP Amount</Label>
+                  <Label htmlFor="buy-xrp">XRP to Spend</Label>
                   <Input
                     id="buy-xrp"
                     type="number"
@@ -104,7 +93,7 @@ export const OfferForm = ({ onCreateOffer, onFetchPrice, isLoading }: OfferFormP
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="buy-amount">Currency Amount</Label>
+                  <Label htmlFor="buy-amount">Tokens to Buy</Label>
                   <Input
                     id="buy-amount"
                     type="number"
@@ -156,7 +145,7 @@ export const OfferForm = ({ onCreateOffer, onFetchPrice, isLoading }: OfferFormP
             <form onSubmit={handleSellSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sell-xrp">XRP Amount</Label>
+                  <Label htmlFor="sell-xrp">XRP to Receive</Label>
                   <Input
                     id="sell-xrp"
                     type="number"
@@ -169,7 +158,7 @@ export const OfferForm = ({ onCreateOffer, onFetchPrice, isLoading }: OfferFormP
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sell-amount">Currency Amount</Label>
+                  <Label htmlFor="sell-amount">Tokens to Sell</Label>
                   <Input
                     id="sell-amount"
                     type="number"

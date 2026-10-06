@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Amount, dropsToXrp } from 'xrpl';
 import { OfferData } from '@/hooks/useXRPL';
+import { decodeCurrency } from '@/lib/xrpl';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface OffersListProps {
@@ -8,21 +10,17 @@ interface OffersListProps {
 }
 
 export const OffersList = ({ offers }: OffersListProps) => {
-  const formatCurrency = (amount: string | object) => {
+  const formatCurrency = (amount: Amount) => {
     if (typeof amount === 'string') {
-      // XRP amount in drops
-      return `${(parseInt(amount) / 1000000).toFixed(6)} XRP`;
-    } else if (typeof amount === 'object' && amount !== null) {
-      const curr = amount as any;
-      return `${curr.value} ${curr.currency}`;
+      return `${dropsToXrp(amount)} XRP`;
     }
-    return 'Unknown';
+    return `${amount.value} ${decodeCurrency(amount.currency)}`;
   };
 
   const getOfferType = (offer: OfferData) => {
-    // If TakerGets is XRP (string), it's a sell offer (selling the other currency for XRP)
-    // If TakerPays is XRP (string), it's a buy offer (buying the other currency with XRP)
-    return typeof offer.takerGets === 'string' ? 'sell' : 'buy';
+    // TakerGets is what the offer owner gives up. Giving XRP means buying the token;
+    // giving the token means selling it for XRP.
+    return typeof offer.takerGets === 'string' ? 'buy' : 'sell';
   };
 
   return (

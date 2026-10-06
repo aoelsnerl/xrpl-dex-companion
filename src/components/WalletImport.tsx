@@ -18,7 +18,11 @@ export const WalletImport = ({ onImport, isLoading }: WalletImportProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (seed.trim()) {
-      await onImport(seed.trim());
+      try {
+        await onImport(seed.trim());
+      } catch {
+        // The hook already reported the error.
+      }
     }
   };
 
@@ -30,17 +34,17 @@ export const WalletImport = ({ onImport, isLoading }: WalletImportProps) => {
         </div>
         <CardTitle className="text-xl">Import XRPL Wallet</CardTitle>
         <CardDescription>
-          Enter your seed phrase to import your XRPL wallet
+          Enter your family seed (starts with "s") to import your XRPL wallet
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="seed">Seed Phrase</Label>
+            <Label htmlFor="seed">Secret Seed</Label>
             <div className="relative">
               <Textarea
                 id="seed"
-                placeholder="Enter your seed phrase..."
+                placeholder="sXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                 value={seed}
                 onChange={(e) => setSeed(e.target.value)}
                 className="min-h-[100px] bg-muted/50 border-border/50"
@@ -73,7 +77,7 @@ export const WalletImport = ({ onImport, isLoading }: WalletImportProps) => {
         
         <div className="mt-4 p-3 bg-muted/20 rounded-lg border border-border/30">
           <p className="text-sm text-muted-foreground">
-            <strong>Note:</strong> This app connects to XRPL Mainnet. Make sure you're using a mainnet seed phrase.
+            <strong>Note:</strong> This app connects to XRPL Mainnet. Make sure you're using a mainnet seed.
           </p>
         </div>
       </CardContent>
