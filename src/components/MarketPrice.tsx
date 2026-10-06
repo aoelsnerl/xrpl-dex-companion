@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { isValidClassicAddress } from 'xrpl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,44 +10,48 @@ import { MarketPrice as MarketPriceType } from '@/hooks/useXRPL';
 interface MarketPriceProps {
   currency: string;
   issuer: string;
-  onFetchPrice: (
-    takerGets: { currency: string; issuer?: string },
-    takerPays: { currency: string; issuer?: string }
-  ) => Promise<MarketPriceType | null>;
+  onFetchPrice: (token: { currency: string; issuer: string }) => Promise<MarketPriceType | null>;
   isLoading?: boolean;
 }
+
+const FETCH_DEBOUNCE_MS = 500;
+
+const formatPrice = (value: string | null) =>
+  value === null ? '—' : parseFloat(value).toFixed(6);
 
 export const MarketPrice = ({ currency, issuer, onFetchPrice, isLoading }: MarketPriceProps) => {
   const [price, setPrice] = useState<MarketPriceType | null>(null);
   const [isFetching, setIsFetching] = useState(false);
+  const requestId = useRef(0);
 
-  const fetchCurrentPrice = async () => {
-    if (!currency || !issuer) return;
-    
+  const trimmedCurrency = currency.trim();
+  const trimmedIssuer = issuer.trim();
+  const isReady = trimmedCurrency.length >= 3 && isValidClassicAddress(trimmedIssuer);
+
+  const fetchCurrentPrice = useCallback(async () => {
+    if (!isReady) return;
+
+    // Ignore responses that arrive after a newer request was started.
+    const id = ++requestId.current;
     try {
       setIsFetching(true);
-      
-      // Fetch XRP/Token price
-      const priceData = await onFetchPrice(
-        { currency: 'XRP' },
-        { currency, issuer }
-      );
-      
-      setPrice(priceData);
+      const priceData = await onFetchPrice({ currency: trimmedCurrency, issuer: trimmedIssuer });
+      if (id === requestId.current) setPrice(priceData);
     } catch (error) {
       console.error('Failed to fetch price:', error);
     } finally {
-      setIsFetching(false);
+      if (id === requestId.current) setIsFetching(false);
     }
-  };
+  }, [isReady, onFetchPrice, trimmedCurrency, trimmedIssuer]);
 
   useEffect(() => {
-    if (currency && issuer) {
-      fetchCurrentPrice();
-    }
-  }, [currency, issuer]);
+    setPrice(null);
+    if (!isReady) return;
+    const timer = setTimeout(fetchCurrentPrice, FETCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [isReady, fetchCurrentPrice]);
 
-  if (!currency || !issuer) {
+  if (!isReady) {
     return (
       <Card className="bg-gradient-card border-border/50 shadow-card">
         <CardHeader>
@@ -55,7 +60,7 @@ export const MarketPrice = ({ currency, issuer, onFetchPrice, isLoading }: Marke
             Market Price
           </CardTitle>
           <CardDescription>
-            Enter currency and issuer to see current market prices
+            Enter a currency code and a valid issuer address to see current market prices
           </CardDescription>
         </CardHeader>
       </Card>
@@ -81,7 +86,7 @@ export const MarketPrice = ({ currency, issuer, onFetchPrice, isLoading }: Marke
           </Button>
         </div>
         <CardDescription>
-          {currency}/XRP • Real-time XRPL DEX prices
+          {trimmedCurrency}/XRP • Real-time XRPL DEX prices
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -94,10 +99,10 @@ export const MarketPrice = ({ currency, issuer, onFetchPrice, isLoading }: Marke
                   <span className="text-sm font-medium">Best Bid</span>
                 </div>
                 <div className="text-2xl font-bold text-success">
-                  {parseFloat(price.bid).toFixed(6)}
+                  {formatPrice(price.bid)}
                 </div>
                 <Badge variant="secondary" className="text-xs">
-                  XRP per {currency}
+                  XRP per {trimmedCurrency}
                 </Badge>
               </div>
               
@@ -107,10 +112,10 @@ export const MarketPrice = ({ currency, issuer, onFetchPrice, isLoading }: Marke
                   <span className="text-sm font-medium">Best Ask</span>
                 </div>
                 <div className="text-2xl font-bold text-destructive">
-                  {parseFloat(price.ask).toFixed(6)}
+                  {formatPrice(price.ask)}
                 </div>
                 <Badge variant="secondary" className="text-xs">
-                  XRP per {currency}
+                  XRP per {trimmedCurrency}
                 </Badge>
               </div>
             </div>
@@ -121,13 +126,15 @@ export const MarketPrice = ({ currency, issuer, onFetchPrice, isLoading }: Marke
               <div>
                 <span className="text-muted-foreground">Spread:</span>
                 <span className="ml-2 font-medium">
-                  {((parseFloat(price.ask) - parseFloat(price.bid)) / parseFloat(price.bid) * 100).toFixed(2)}%
+                  {price.spread !== null && price.midPrice !== null
+                    ? `${(parseFloat(price.spread) / parseFloat(price.midPrice) * 100).toFixed(2)}%`
+                    : '—'}
                 </span>
               </div>
-              {price.lastPrice && (
+              {price.midPrice !== null && (
                 <div>
-                  <span className="text-muted-foreground">Last Price:</span>
-                  <span className="ml-2 font-medium">{parseFloat(price.lastPrice).toFixed(6)}</span>
+                  <span className="text-muted-foreground">Mid Price:</span>
+                  <span className="ml-2 font-medium">{formatPrice(price.midPrice)}</span>
                 </div>
               )}
             </div>

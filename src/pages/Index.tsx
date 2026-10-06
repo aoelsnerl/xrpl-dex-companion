@@ -157,7 +157,7 @@ const Index = () => {
                       </p>
                       <div className="space-y-2">
                         <div className="text-sm">
-                          <strong>Currency Code:</strong> The 3-character code for the token (e.g., USD)
+                          <strong>Currency Code:</strong> The token's code, e.g. USD or SOLO (longer codes are hex-encoded automatically)
                         </div>
                         <div className="text-sm">
                           <strong>Issuer:</strong> The XRPL address that issues the token

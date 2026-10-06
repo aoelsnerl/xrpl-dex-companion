@@ -73,6 +73,11 @@ export const WalletInfo = ({ wallet, onRefresh, isLoading }: WalletInfoProps) =>
               {wallet.balance} XRP
             </span>
           </div>
+          {!wallet.activated && (
+            <p className="text-xs text-muted-foreground">
+              This account is not activated yet. Send it enough XRP to cover the base reserve before trading.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
